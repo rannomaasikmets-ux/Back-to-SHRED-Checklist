@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Return‑to‑Riding Passport</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui'] },
+          colors: {
+            ink: {
+              50: '#f6f7f8',
+              100: '#edeff1',
+              200: '#dadde1',
+              300: '#b4bac2',
+              400: '#8e99a6',
+              500: '#6f7f92',
+              600: '#536273',
+              700: '#3f4b57',
+              800: '#2c373f',
+              900: '#1d242a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    html, body { height: 100%; }
+    ::selection { background: #a7f3d0; color: #0f172a; }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-b from-ink-900 via-ink-800 to-ink-900 text-ink-50">
+  <!-- Top bar -->
+  <header class="sticky top-0 z-40 backdrop-blur border-b border-white/10 bg-ink-900/70">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div class="flex items-center gap-3">
+        <div class="h-10 w-10 rounded-xl bg-emerald-400/20 ring-1 ring-emerald-300/30 flex items-center justify-center">
+          <svg class="h-6 w-6 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3l2.5 5 5.5.8-4 3.9.9 5.6L12 16l-4.9 2.3.9-5.6-4-3.9 5.5-.8L12 3z"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-xl md:text-2xl font-semibold tracking-tight">Return‑to‑Riding Passport</h1>
+          <p class="text-sm text-ink-300">Multi‑athlete rehab progress — ROM • Strength • Isometric • Movement • Power • Run • Riding</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <label class="text-xs text-ink-300">Active athlete</label>
+        <select id="profileSelect" class="rounded-xl bg-ink-800 border border-white/10 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"></select>
+        <input id="renameInput" class="rounded-xl bg-ink-800 border border-white/10 px-3 py-2 text-sm w-48 focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="Rename"/>
+        <button id="newProfileBtn" class="rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-ink-700 transition">➕ New</button>
+        <button id="dupProfileBtn" class="rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-ink-700 transition">🗂️ Duplicate</button>
+        <button id="delProfileBtn" class="rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-red-600/20 hover:border-red-400/40 transition">🗑️ Delete</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-6 py-6">
+    <!-- Controls row -->
+    <section class="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+      <div class="col-span-2 flex flex-wrap items-center gap-2">
+        <div class="relative">
+          <svg class="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-ink-300" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-4.3-4.3M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/>
+          </svg>
+          <input id="searchInput" class="rounded-xl bg-ink-800 border border-white/10 pl-9 pr-3 py-2 text-sm w-72 focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="Search items or goals">
+        </div>
+        <label class="flex items-center gap-2 text-sm text-ink-200 pl-1">
+          <input type="checkbox" id="incompleteOnly" class="h-4 w-4 rounded border-white/20 bg-ink-800"> Incomplete only
+        </label>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2 justify-start lg:justify-end">
+        <button id="exportCurrentBtn" class="rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-ink-700 transition">📤 Export current</button>
+        <label class="rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-ink-700 transition cursor-pointer">
+          <input id="importFile" type="file" accept="application/json" class="hidden"> 📥 Import
+        </label>
+        <button id="exportAllBtn" class="rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-ink-700 transition">🗃️ Export all</button>
+        <button id="resetActiveBtn" class="rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-red-600/20 hover:border-red-400/40 transition">♻️ Reset active</button>
+      </div>
+    </section>
+
+    <!-- Overview cards -->
+    <section id="profilesOverview" class="grid gap-4 mt-6 sm:grid-cols-2 lg:grid-cols-3"></section>
+
+    <!-- Section dashboards -->
+    <h2 class="mt-8 mb-2 text-sm uppercase tracking-wider text-ink-300">Section progress</h2>
+    <section id="dashGrid" class="grid gap-4 md:grid-cols-2 lg:grid-cols-4"></section>
+
+    <!-- Sections accordion -->
+    <h2 class="mt-10 mb-2 text-sm uppercase tracking-wider text-ink-300">Checklist</h2>
+    <section id="sectionsRoot" class="space-y-3"></section>
+
+    <p class="text-xs text-ink-300 mt-10">Local-only storage. Export JSON to back up or share a profile; Import to restore. No data leaves your device.</p>
+  </main>
+
+  <template id="cardTpl">
+    <div class="bg-white/5 border border-white/10 rounded-2xl shadow-lg shadow-black/20 p-4"></div>
+  </template>
+
+<script>
+// -------- Template Data --------
+const templateSections = [
+  { name: "ROM & Early Stage Recovery", items: [
+    { id: "rom_pain_rest", label: "Pain at rest", goal: "None/minimal", checked: false },
+    { id: "rom_effusion", label: "Joint swelling/effusion", goal: "Minimal/none", checked: false },
+    { id: "rom_joint_rom", label: "Knee/hip/ankle ROM", goal: "≥95% of uninjured side", checked: false },
+    { id: "rom_ext", label: "Knee extension ROM", goal: "Full, equal to uninjured side", checked: false },
+    { id: "rom_flex", label: "Knee flexion ROM", goal: "Within 5° of uninjured side", checked: false },
+    { id: "rom_walk", label: "Walking (pain-free)", goal: "Normal gait", checked: false },
+    { id: "rom_stairs", label: "Stairs", goal: "Up & down pain-free", checked: false },
+  ]},
+  { name: "Strength Benchmarks", items: [
+    { id: "str_slp_075", label: "Single-Leg Leg Press", goal: "0.75 × BW", checked: false },
+    { id: "str_slp_100", label: "Single-Leg Leg Press", goal: "1.0 × BW", checked: false },
+    { id: "str_slp_125", label: "Single-Leg Leg Press", goal: "1.25 × BW", checked: false },
+    { id: "str_sq_050", label: "Squat (Bilateral)", goal: "0.5 × BW", checked: false },
+    { id: "str_sq_100", label: "Squat (Bilateral)", goal: "1.0 × BW", checked: false },
+    { id: "str_sq_125", label: "Squat (Bilateral)", goal: "1.25 × BW", checked: false },
+    { id: "str_sls_box", label: "Single-Leg Squat to Box", goal: "10 reps/leg", checked: false },
+    { id: "str_nordic", label: "Nordic Hamstring Eccentric", goal: "3 reps to ≥60° with control", checked: false },
+    { id: "str_calf", label: "Single-Leg Calf Raise", goal: "25 reps", checked: false },
+    { id: "str_hip_sym", label: "Hip Strength Symmetry", goal: ">90%", checked: false },
+    { id: "str_calf_sym", label: "Calf Raise Symmetry", goal: ">90%", checked: false },
+  ]},
+  { name: "Isometric Strength", items: [
+    { id: "iso_quad_70", label: "Quadriceps Symmetry", goal: ">70%", checked: false },
+    { id: "iso_quad_80", label: "Quadriceps Symmetry", goal: ">80%", checked: false },
+    { id: "iso_quad_90", label: "Quadriceps Symmetry", goal: ">90%", checked: false },
+    { id: "iso_quad_95", label: "Quadriceps Symmetry", goal: ">95%", checked: false },
+    { id: "iso_ham_70", label: "Hamstring Symmetry", goal: ">70%", checked: false },
+    { id: "iso_ham_80", label: "Hamstring Symmetry", goal: ">80%", checked: false },
+    { id: "iso_ham_90", label: "Hamstring Symmetry", goal: ">90%", checked: false },
+    { id: "iso_ham_95", label: "Hamstring Symmetry", goal: ">95%", checked: false },
+    { id: "iso_add_90", label: "Adductor Strength Symmetry", goal: ">90%", checked: false },
+    { id: "iso_abd_90", label: "Abductor Strength Symmetry", goal: ">90%", checked: false },
+    { id: "iso_hipext_90", label: "Hip Extension Strength Symmetry", goal: ">90%", checked: false },
+    { id: "iso_quad_25", label: "Quadriceps Isometric", goal: "2.5 × BW", checked: false },
+    { id: "iso_quad_30", label: "Quadriceps Isometric", goal: "3.0 × BW", checked: false },
+    { id: "iso_quad_35", label: "Quadriceps Isometric", goal: "3.5 × BW", checked: false },
+    { id: "iso_quad_40", label: "Quadriceps Isometric", goal: "4.0 × BW", checked: false },
+    { id: "iso_ham_15", label: "Hamstring Isometric", goal: "1.5 × BW", checked: false },
+    { id: "iso_ham_20", label: "Hamstring Isometric", goal: "2.0 × BW", checked: false },
+    { id: "iso_ham_225", label: "Hamstring Isometric", goal: "2.25 × BW", checked: false },
+    { id: "iso_ham_25", label: "Hamstring Isometric", goal: "2.5 × BW", checked: false },
+    { id: "iso_rfd", label: "Rate of Force Development (RFD)", goal: "≥90% symmetry", checked: false },
+  ]},
+  { name: "Movement Quality", items: [
+    { id: "mv_walk", label: "Walking gait", goal: "Normal, pain-free", checked: false },
+    { id: "mv_run", label: "Running gait", goal: "Symmetrical, pain-free, no compensations", checked: false },
+    { id: "mv_sl_balance", label: "Single-Leg Balance", goal: "30s eyes open, 15s eyes closed", checked: false },
+    { id: "mv_step20", label: "Step-Down Test (20 cm)", goal: "Controlled, no valgus, no hip drop", checked: false },
+    { id: "mv_step40", label: "Step-Down Test (40 cm)", goal: "Controlled, no valgus, no hip drop", checked: false },
+    { id: "mv_sls_reps", label: "Single-Leg Squat", goal: ">10 reps, knee tracks over toes, pelvis level", checked: false },
+    { id: "mv_lm_dl", label: "Landing Mechanics (Double-Leg)", goal: "Soft, symmetrical, no valgus collapse", checked: false },
+    { id: "mv_lm_sl", label: "Landing Mechanics (Single-Leg)", goal: "Stable hip/knee control, no valgus", checked: false },
+    { id: "mv_drop", label: "Drop Jump Mechanics", goal: "Good stiffness & alignment, no valgus", checked: false },
+    { id: "mv_sl_90", label: "Single-Leg Drop Landing (90° turn)", goal: "Stable, no valgus/trunk tilt", checked: false },
+    { id: "mv_sl_broad_land", label: "Single-Leg Broad Jump Landing", goal: "Controlled, stable, no valgus", checked: false },
+    { id: "mv_hop_stick", label: "Single-Leg Hop & Stick (3 reps)", goal: "Stable, controlled, no valgus", checked: false },
+    { id: "mv_crossover", label: "Crossover Hop Landing", goal: "Stable, no valgus/trunk lean", checked: false },
+    { id: "mv_cod", label: "Change of Direction Mechanics", goal: "Safe deceleration & cut, no valgus/trunk lean", checked: false },
+    { id: "mv_ybal", label: "Y-Balance / SEBT", goal: "≥90% symmetry", checked: false },
+  ]},
+  { name: "Power", items: [
+    { id: "p_cmj", label: "Countermovement Jump (CMJ)", goal: "100% of pre-injury value", checked: false },
+    { id: "p_slcmj", label: "Single-Leg CMJ Symmetry", goal: "≥90% symmetry", checked: false },
+    { id: "p_slbroad", label: "Single-Leg Broad Jump Symmetry", goal: "≥90% symmetry", checked: false },
+    { id: "p_triple", label: "Triple Hop for Distance Symmetry", goal: "≥90%", checked: false },
+    { id: "p_lateral", label: "Lateral Hop Test Symmetry", goal: "≥90%", checked: false },
+    { id: "p_rsi", label: "Reactive Strength Index (bilateral)", goal: "≥90% symmetry", checked: false },
+    { id: "p_slrsi", label: "Single-Leg RSI", goal: "≥90% symmetry", checked: false },
+  ]},
+  { name: "Return-to-Run Readiness", items: [
+    { id: "run_slsq15", label: "Single-Leg Squat", goal: ">15 reps", checked: false },
+    { id: "run_slbridge20", label: "Single-Leg Bridge", goal: ">20 reps", checked: false },
+    { id: "run_slcalf20", label: "Single-Leg Calf Raise", goal: ">20 reps", checked: false },
+    { id: "run_fwdhop15", label: "Repeated Forward Hop", goal: ">15 reps", checked: false },
+    { id: "run_verthop15", label: "Repeated Vertical Hop", goal: ">15 reps", checked: false },
+    { id: "run_prog", label: "Walk-Run Progression", goal: "Tolerated", checked: false },
+    { id: "run_cont", label: "Continuous Running", goal: "Pain-free", checked: false },
+  ]},
+  { name: "Return-to-Riding", items: [
+    { id: "ride_general", label: "General Riding", goal: "• Pain-free jogging\n• Quads ≥2.5× BW\n• Hamstrings ≥2.0× BW\n• Double-Leg landings with good form", checked: false },
+    { id: "ride_small_obs", label: "Small Obstacles / Easy Tricks", goal: "• Quads ≥3.2× BW\n• Hamstrings ≥2.2× BW\n• Single-Leg landings to 90° depth, good form\n• CMJ ≥90% of pre-injury", checked: false },
+    { id: "ride_small_jumps", label: "Small Jumps", goal: "• All previous criteria pain-free\n• Basic tricks on rails pain-free\n• Single-Leg CMJ (symmetry ≥90%)", checked: false },
+    { id: "ride_full", label: "Full Riding (100%)", goal: "• Quads ≥4.0× BW\n• Hamstrings ≥2.5× BW\n• Strength Symmetry >90%\n• RSI ≥90%\n• Single-Leg RSI ≥90%\n• Single-Leg Power Symmetry ≥90%", checked: false },
+  ]},
+];
+
+// -------- Storage --------
+const LS_KEY = "rtr_profiles_v1";
+const LS_ACTIVE = "rtr_active_id_v1";
+
+const cloneTemplate = () => JSON.parse(JSON.stringify(templateSections));
+const makeProfile = (name) => ({ id: Date.now() + "_" + Math.random().toString(36).slice(2,8), name, sections: cloneTemplate() });
+
+function loadInitial() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    const active = localStorage.getItem(LS_ACTIVE) || "";
+    if (raw) {
+      const profiles = JSON.parse(raw);
+      if (Array.isArray(profiles) && profiles.length) {
+        const validActive = profiles.find(p => p.id === active)?.id || profiles[0].id;
+        return { profiles, activeId: validActive };
+      }
+    }
+  } catch {}
+  const first = makeProfile("Athlete 1");
+  return { profiles: [first], activeId: first.id };
+}
+
+function saveState(state) {
+  localStorage.setItem(LS_KEY, JSON.stringify(state.profiles));
+  localStorage.setItem(LS_ACTIVE, state.activeId);
+}
+
+// -------- Helpers --------
+function sectionProgress(items) {
+  const total = items.length;
+  const done = items.filter(i => i.checked).length;
+  const pct = total ? Math.round(done / total * 100) : 0;
+  return { total, done, pct };
+}
+function statusColor(pct) {
+  if (pct < 50) return "bg-red-500";
+  if (pct < 80) return "bg-yellow-500";
+  return "bg-emerald-500";
+}
+
+// -------- App State --------
+let state = loadInitial();
+let query = "";
+let incompleteOnly = false;
+
+const els = {
+  profileSelect: document.getElementById("profileSelect"),
+  renameInput: document.getElementById("renameInput"),
+  newProfileBtn: document.getElementById("newProfileBtn"),
+  dupProfileBtn: document.getElementById("dupProfileBtn"),
+  delProfileBtn: document.getElementById("delProfileBtn"),
+  exportCurrentBtn: document.getElementById("exportCurrentBtn"),
+  exportAllBtn: document.getElementById("exportAllBtn"),
+  importFile: document.getElementById("importFile"),
+  resetActiveBtn: document.getElementById("resetActiveBtn"),
+  searchInput: document.getElementById("searchInput"),
+  incompleteOnly: document.getElementById("incompleteOnly"),
+  profilesOverview: document.getElementById("profilesOverview"),
+  dashGrid: document.getElementById("dashGrid"),
+  sectionsRoot: document.getElementById("sectionsRoot"),
+};
+
+function getActiveProfile() {
+  return state.profiles.find(p => p.id === state.activeId);
+}
+
+// -------- Render --------
+function cardWrap() {
+  return document.getElementById('cardTpl').content.firstElementChild.cloneNode(true);
+}
+
+function renderProfilesDropdown() {
+  const select = els.profileSelect;
+  select.innerHTML = "";
+  state.profiles.forEach(p => {
+    const opt = document.createElement("option");
+    opt.value = p.id;
+    opt.textContent = p.name;
+    select.appendChild(opt);
+  });
+  select.value = state.activeId;
+  els.renameInput.value = getActiveProfile().name;
+}
+
+function renderProfilesOverview() {
+  els.profilesOverview.innerHTML = "";
+  state.profiles.forEach(p => {
+    const items = p.sections.flatMap(s => s.items);
+    const total = items.length;
+    const done = items.filter(i => i.checked).length;
+    const pct = Math.round(done / Math.max(total, 1) * 100);
+    const card = cardWrap();
+    card.innerHTML = `
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="font-semibold text-ink-50">${p.name}</div>
+          <div class="text-xs text-ink-300 mt-0.5">${done} / ${total} complete</div>
+        </div>
+        <span class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-ink-900 ${pct<50?'bg-red-400/90':pct<80?'bg-yellow-300/90':'bg-emerald-300/90'}">
+          ${pct}%
+        </span>
+      </div>
+      <div class="h-2 bg-white/10 rounded-full mt-3 overflow-hidden">
+        <div class="h-2 ${statusColor(pct)}" style="width:${pct}%"></div>
+      </div>
+      ${p.id !== state.activeId ? `<button data-switch="${p.id}" class="mt-3 w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm hover:bg-white/10 transition">Switch</button>` : ""}
+    `;
+    els.profilesOverview.appendChild(card);
+  });
+  els.profilesOverview.querySelectorAll("[data-switch]").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      state.activeId = e.currentTarget.getAttribute("data-switch");
+      saveState(state);
+      renderAll();
+    });
+  });
+}
+
+function renderDashGrid() {
+  els.dashGrid.innerHTML = "";
+  const active = getActiveProfile();
+  active.sections.forEach(s => {
+    const {pct, done, total} = sectionProgress(s.items);
+    const card = cardWrap();
+    card.innerHTML = `
+      <div class="flex items-center justify-between">
+        <div class="font-semibold text-ink-50">${s.name}</div>
+        <span class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-ink-900 ${pct<50?'bg-red-400/90':pct<80?'bg-yellow-300/90':'bg-emerald-300/90'}">
+          ${pct}%
+        </span>
+      </div>
+      <div class="text-xs text-ink-300 mt-1">${done} / ${total} complete</div>
+      <div class="h-2 bg-white/10 rounded-full mt-2 overflow-hidden">
+        <div class="h-2 ${statusColor(pct)}" style="width:${pct}%"></div>
+      </div>
+    `;
+    els.dashGrid.appendChild(card);
+  });
+
+  const items = active.sections.flatMap(s => s.items);
+  const total = items.length;
+  const done = items.filter(i => i.checked).length;
+  const pct = Math.round(done / Math.max(total, 1) * 100);
+  const totalCard = cardWrap();
+  totalCard.innerHTML = `
+    <div class="flex items-center justify-between">
+      <div class="font-semibold text-ink-50">Total Progress (Active)</div>
+      <span class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-ink-900 ${pct<50?'bg-red-400/90':pct<80?'bg-yellow-300/90':'bg-emerald-300/90'}">
+        ${pct}%
+      </span>
+    </div>
+    <div class="text-xs text-ink-300 mt-1">${done} / ${total} complete</div>
+    <div class="h-2 bg-white/10 rounded-full mt-2 overflow-hidden">
+      <div class="h-2 ${statusColor(pct)}" style="width:${pct}%"></div>
+    </div>
+  `;
+  els.dashGrid.appendChild(totalCard);
+}
+
+function renderSections() {
+  const active = getActiveProfile();
+  els.sectionsRoot.innerHTML = "";
+  const q = query.toLowerCase();
+
+  active.sections.forEach(s => {
+    const items = s.items.filter(i => {
+      const matches = i.label.toLowerCase().includes(q) || i.goal.toLowerCase().includes(q);
+      const incCheck = incompleteOnly ? !i.checked : true;
+      return matches && incCheck;
+    });
+
+    const card = cardWrap();
+    const { pct } = sectionProgress(s.items);
+    card.innerHTML = `
+      <details class="group">
+        <summary class="list-none cursor-pointer">
+          <div class="w-full flex items-center justify-between">
+            <div>
+              <div class="text-lg font-semibold text-ink-50">${s.name}</div>
+              <div class="text-xs text-ink-300">${items.length} item(s) shown</div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="hidden md:block w-40 h-2 bg-white/10 rounded-full overflow-hidden">
+                <div class="h-2 ${statusColor(pct)}" style="width:${pct}%"></div>
+              </div>
+              <span class="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-ink-900 ${pct<50?'bg-red-400/90':pct<80?'bg-yellow-300/90':'bg-emerald-300/90'}">${pct}%</span>
+            </div>
+          </div>
+        </summary>
+        <div class="mt-4 space-y-3">
+          <div class="flex items-center justify-end gap-2">
+            <button data-markall="${s.name}" class="rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm hover:bg-white/10 transition">Mark all</button>
+            <button data-clear="${s.name}" class="rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm hover:bg-white/10 transition">Clear section</button>
+          </div>
+          <div class="grid gap-2">
+            ${items.length === 0 ? `<div class="text-sm text-ink-300 p-3">No items match your filters.</div>` : ""}
+            ${items.map(it => `
+              <label class="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-3 hover:bg-white/10 transition">
+                <input type="checkbox" data-check="${it.id}" ${it.checked ? "checked": ""} class="mt-1 h-4 w-4 rounded border-white/20 bg-ink-800">
+                <div class="flex-1">
+                  <div class="font-medium text-ink-50">${it.label}</div>
+                  <div class="text-sm text-ink-200 whitespace-pre-line">${it.goal}</div>
+                </div>
+              </label>
+            `).join("")}
+          </div>
+        </div>
+      </details>
+    `;
+
+    // Wire up events
+    card.querySelectorAll("[data-markall]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        s.items.forEach(it => it.checked = true);
+        saveState(state);
+        renderAll();
+      });
+    });
+    card.querySelectorAll("[data-clear]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        s.items.forEach(it => it.checked = false);
+        saveState(state);
+        renderAll();
+      });
+    });
+    card.querySelectorAll("[data-check]").forEach(chk => {
+      chk.addEventListener("change", (e) => {
+        const id = e.target.getAttribute("data-check");
+        s.items = s.items.map(it => it.id === id ? { ...it, checked: e.target.checked } : it);
+        saveState(state);
+        renderAll();
+      });
+    });
+
+    els.sectionsRoot.appendChild(card);
+  });
+}
+
+function renderAll() {
+  renderProfilesDropdown();
+  renderProfilesOverview();
+  renderDashGrid();
+  renderSections();
+}
+
+// -------- Events --------
+els.profileSelect.addEventListener("change", (e) => {
+  state.activeId = e.target.value;
+  saveState(state);
+  renderAll();
+});
+els.renameInput.addEventListener("input", (e) => {
+  const active = getActiveProfile();
+  active.name = e.target.value;
+  saveState(state);
+  renderAll();
+});
+els.newProfileBtn.addEventListener("click", () => {
+  const newP = makeProfile("Athlete " + (state.profiles.length + 1));
+  state.profiles.push(newP);
+  state.activeId = newP.id;
+  saveState(state);
+  renderAll();
+});
+els.dupProfileBtn.addEventListener("click", () => {
+  const src = getActiveProfile();
+  const dup = { id: makeProfile("tmp").id, name: src.name + " (copy)", sections: JSON.parse(JSON.stringify(src.sections)) };
+  state.profiles.push(dup);
+  state.activeId = dup.id;
+  saveState(state);
+  renderAll();
+});
+els.delProfileBtn.addEventListener("click", () => {
+  if (state.profiles.length <= 1) return alert("Keep at least one athlete.");
+  const idx = state.profiles.findIndex(p => p.id === state.activeId);
+  state.profiles.splice(idx, 1);
+  state.activeId = state.profiles[0].id;
+  saveState(state);
+  renderAll();
+});
+els.resetActiveBtn.addEventListener("click", () => {
+  const active = getActiveProfile();
+  active.sections.forEach(s => s.items.forEach(it => it.checked = false));
+  saveState(state);
+  renderAll();
+});
+els.searchInput.addEventListener("input", (e) => {
+  query = e.target.value || "";
+  renderAll();
+});
+els.incompleteOnly.addEventListener("change", (e) => {
+  incompleteOnly = e.target.checked;
+  renderAll();
+});
+
+// Export / Import
+els.exportCurrentBtn.addEventListener("click", () => {
+  const active = getActiveProfile();
+  const payload = JSON.stringify(active, null, 2);
+  const blob = new Blob([payload], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = (active.name.trim().replace(/ +/g, "_") || "athlete") + "_riding_checklist.json";
+  a.click();
+  URL.revokeObjectURL(url);
+});
+els.exportAllBtn.addEventListener("click", () => {
+  const payload = JSON.stringify(state, null, 2);
+  const blob = new Blob([payload], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "all_profiles_riding_checklists.json";
+  a.click();
+  URL.revokeObjectURL(url);
+});
+els.importFile.addEventListener("change", (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const obj = JSON.parse(String(reader.result));
+      if (obj && obj.sections && obj.name) {
+        const prof = { id: makeProfile("tmp").id, name: obj.name, sections: obj.sections };
+        state.profiles.push(prof);
+        state.activeId = prof.id;
+      } else if (obj && Array.isArray(obj.profiles)) {
+        state = obj;
+      } else {
+        alert("Invalid file structure");
+        return;
+      }
+      saveState(state);
+      renderAll();
+      e.target.value = "";
+    } catch {
+      alert("Invalid file");
+    }
+  };
+  reader.readAsText(file);
+});
+
+// Init
+renderAll();
+</script>
+</body>
+</html>
