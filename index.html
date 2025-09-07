@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Return‑to‑Riding Passport</title>
+  <title>Return to SHRED Checklist</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -47,7 +47,7 @@
           </svg>
         </div>
         <div>
-          <h1 class="text-xl md:text-2xl font-semibold tracking-tight">Return‑to‑Riding Passport</h1>
+          <h1 class="text-xl md:text-2xl font-semibold tracking-tight">Return to SHRED Checklist</h1>
           <p class="text-sm text-ink-300">Multi‑athlete rehab progress — ROM • Strength • Isometric • Movement • Power • Run • Riding</p>
         </div>
       </div>
@@ -79,6 +79,8 @@
       </div>
 
       <div class="flex flex-wrap items-center gap-2 justify-start lg:justify-end">
+        <input id="coachEmailInput" class="rounded-xl bg-ink-800 border border-white/10 px-3 py-2 text-sm w-56 focus:outline-none focus:ring-2 focus:ring-emerald-400" placeholder="Coach email (optional)">
+        <button id="emailCoachBtn" class="rounded-xl border border-emerald-400/40 text-emerald-200 px-3 py-2 text-sm hover:bg-emerald-400/10 transition">✉️ Email to coach</button>
         <button id="exportCurrentBtn" class="rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-ink-700 transition">📤 Export current</button>
         <label class="rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-ink-700 transition cursor-pointer">
           <input id="importFile" type="file" accept="application/json" class="hidden"> 📥 Import
@@ -99,7 +101,7 @@
     <h2 class="mt-10 mb-2 text-sm uppercase tracking-wider text-ink-300">Checklist</h2>
     <section id="sectionsRoot" class="space-y-3"></section>
 
-    <p class="text-xs text-ink-300 mt-10">Local-only storage. Export JSON to back up or share a profile; Import to restore. No data leaves your device.</p>
+    <p class="text-xs text-ink-300 mt-10">Local-only storage. Export/Email profile to share with coach. No data leaves your device unless you export or share.</p>
   </main>
 
   <template id="cardTpl">
@@ -199,6 +201,7 @@ const templateSections = [
 // -------- Storage --------
 const LS_KEY = "rtr_profiles_v1";
 const LS_ACTIVE = "rtr_active_id_v1";
+const LS_COACH_EMAIL = "rtr_coach_email_v1";
 
 const cloneTemplate = () => JSON.parse(JSON.stringify(templateSections));
 const makeProfile = (name) => ({ id: Date.now() + "_" + Math.random().toString(36).slice(2,8), name, sections: cloneTemplate() });
@@ -236,6 +239,33 @@ function statusColor(pct) {
   if (pct < 80) return "bg-yellow-500";
   return "bg-emerald-500";
 }
+function profileTotals(profile) {
+  const items = profile.sections.flatMap(s => s.items);
+  const total = items.length;
+  const done = items.filter(i => i.checked).length;
+  const pct = Math.round(done / Math.max(total, 1) * 100);
+  return { total, done, pct };
+}
+function summaryText(profile) {
+  const lines = [];
+  const totals = profileTotals(profile);
+  lines.push(`Return to SHRED Checklist — ${profile.name}`);
+  lines.push(`Total: ${totals.pct}% (${totals.done}/${totals.total})`);
+  lines.push(``);
+  profile.sections.forEach(s => {
+    const sp = sectionProgress(s.items);
+    lines.push(`${s.name}: ${sp.pct}% (${sp.done}/${sp.total})`);
+  });
+  lines.push(``);
+  lines.push(`Sent from Return to SHRED Checklist`);
+  return lines.join("\n");
+}
+function profileJSON(profile) {
+  return JSON.stringify(profile, null, 2);
+}
+function makeFile(name, text) {
+  return new File([text], name, { type: "application/json" });
+}
 
 // -------- App State --------
 let state = loadInitial();
@@ -257,11 +287,21 @@ const els = {
   profilesOverview: document.getElementById("profilesOverview"),
   dashGrid: document.getElementById("dashGrid"),
   sectionsRoot: document.getElementById("sectionsRoot"),
+  coachEmailInput: document.getElementById("coachEmailInput"),
+  emailCoachBtn: document.getElementById("emailCoachBtn"),
 };
 
 function getActiveProfile() {
   return state.profiles.find(p => p.id === state.activeId);
 }
+
+// Load saved coach email if any
+(function initCoachEmail() {
+  try {
+    const saved = localStorage.getItem(LS_COACH_EMAIL) || "";
+    els.coachEmailInput.value = saved;
+  } catch {}
+})();
 
 // -------- Render --------
 function cardWrap() {
@@ -492,28 +532,35 @@ els.incompleteOnly.addEventListener("change", (e) => {
   renderAll();
 });
 
+// Persist coach email
+els.coachEmailInput.addEventListener("input", (e) => {
+  try { localStorage.setItem(LS_COACH_EMAIL, e.target.value || ""); } catch {}
+});
+
 // Export / Import
 els.exportCurrentBtn.addEventListener("click", () => {
   const active = getActiveProfile();
-  const payload = JSON.stringify(active, null, 2);
+  const payload = profileJSON(active);
   const blob = new Blob([payload], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = (active.name.trim().replace(/ +/g, "_") || "athlete") + "_riding_checklist.json";
+  a.download = (active.name.trim().replace(/ +/g, "_") || "athlete") + "_SHRED_checklist.json";
   a.click();
   URL.revokeObjectURL(url);
 });
+
 els.exportAllBtn.addEventListener("click", () => {
   const payload = JSON.stringify(state, null, 2);
   const blob = new Blob([payload], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "all_profiles_riding_checklists.json";
+  a.download = "all_profiles_SHRED_checklists.json";
   a.click();
   URL.revokeObjectURL(url);
 });
+
 els.importFile.addEventListener("change", (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
@@ -526,7 +573,7 @@ els.importFile.addEventListener("change", (e) => {
         state.profiles.push(prof);
         state.activeId = prof.id;
       } else if (obj && Array.isArray(obj.profiles)) {
-        state = obj;
+        state = obj; // full restore (replace all)
       } else {
         alert("Invalid file structure");
         return;
@@ -539,6 +586,77 @@ els.importFile.addEventListener("change", (e) => {
     }
   };
   reader.readAsText(file);
+});
+
+// Email to coach (progressive enhancement)
+function summaryText(profile) {
+  const lines = [];
+  const totals = profileTotals(profile);
+  lines.push(`Return to SHRED Checklist — ${profile.name}`);
+  lines.push(`Total: ${totals.pct}% (${totals.done}/${totals.total})`);
+  lines.push(``);
+  profile.sections.forEach(s => {
+    const sp = sectionProgress(s.items);
+    lines.push(`${s.name}: ${sp.pct}% (${sp.done}/${sp.total})`);
+  });
+  lines.push(``);
+  lines.push(`Sent from Return to SHRED Checklist`);
+  return lines.join("\n");
+}
+
+function profileTotals(profile) {
+  const items = profile.sections.flatMap(s => s.items);
+  const total = items.length;
+  const done = items.filter(i => i.checked).length;
+  const pct = Math.round(done / Math.max(total, 1) * 100);
+  return { total, done, pct };
+}
+
+function profileJSON(profile) {
+  return JSON.stringify(profile, null, 2);
+}
+
+function makeFile(name, text) {
+  return new File([text], name, { type: "application/json" });
+}
+
+els.emailCoachBtn.addEventListener("click", async () => {
+  const active = getActiveProfile();
+  const coachEmail = (els.coachEmailInput.value || "").trim();
+  const jsonText = profileJSON(active);
+  const fileName = (active.name.trim().replace(/ +/g, "_") || "athlete") + "_SHRED_checklist.json";
+  const file = makeFile(fileName, jsonText);
+  const text = summaryText(active);
+  const subject = `SHRED Checklist — ${active.name}`;
+
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: subject, text });
+      return;
+    }
+    if (navigator.share) {
+      await navigator.share({ title: subject, text });
+      const blob = new Blob([jsonText], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
+  } catch (e) {}
+
+  const blob = new Blob([jsonText], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  const mailto = `mailto:${encodeURIComponent(coachEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text + "\n\n(Attached: " + fileName + " — if not attached automatically, use the downloaded file.)")}`;
+  window.location.href = mailto;
 });
 
 // Init
