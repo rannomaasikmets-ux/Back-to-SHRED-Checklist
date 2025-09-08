@@ -80,18 +80,14 @@
   <main class="max-w-7xl mx-auto px-6 py-6">
     <!-- Controls row -->
     <section class="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+      <!-- Left: just 'Incomplete only' -->
       <div class="col-span-2 flex flex-wrap items-center gap-2">
-        <div class="relative">
-          <svg class="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-ink-300 muted" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-4.3-4.3M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/>
-          </svg>
-          <input id="searchInput" class="rounded-xl bg-ink-800 border border-white/10 pl-9 pr-3 py-2 text-sm w-72 focus:outline-none focus:ring-2 focus:ring-brand-400" placeholder="Search items or goals">
-        </div>
         <label class="flex items-center gap-2 text-sm text-ink-200 pl-1">
           <input type="checkbox" id="incompleteOnly" class="h-4 w-4 rounded border-white/20 bg-ink-800"> Incomplete only
         </label>
       </div>
 
+      <!-- Right: all actions + SEARCH AT THE END -->
       <div class="flex flex-wrap items-center gap-2 justify-start lg:justify-end">
         <input id="coachEmailInput" class="rounded-xl bg-ink-800 border border-white/10 px-3 py-2 text-sm w-56 focus:outline-none focus:ring-2 focus:ring-brand-400" placeholder="Coach email (optional)">
         <button id="emailCoachBtn" class="rounded-xl border border-brand-400/40 text-emerald-200 px-3 py-2 text-sm hover:bg-brand-400/10 transition">Email to coach</button>
@@ -101,6 +97,14 @@
         </label>
         <button id="exportAllBtn" class="rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-ink-700 transition">Export all</button>
         <button id="resetActiveBtn" class="rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-red-600/20 hover:border-red-400/40 transition">Reset active</button>
+
+        <!-- SEARCH moved to end -->
+        <div class="relative">
+          <svg class="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-ink-300 muted" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-4.3-4.3M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/>
+          </svg>
+          <input id="searchInput" class="rounded-xl bg-ink-800 border border-white/10 pl-9 pr-3 py-2 text-sm w-72 focus:outline-none focus:ring-2 focus:ring-brand-400" placeholder="Search items or goals">
+        </div>
       </div>
     </section>
 
@@ -135,12 +139,10 @@ const templateSections = [
     { id: "rom_stairs", label: "Stairs", goal: "Up & down pain-free", checked: false },
   ]},
   { name: "Strength Benchmarks", items: [
-    // Easier wins first
     { id: "str_calf_sym", label: "Calf Raise Symmetry", goal: ">90%", checked: false },
     { id: "str_hip_sym", label: "Hip Strength Symmetry", goal: ">90%", checked: false },
     { id: "str_calf", label: "Single-Leg Calf Raise", goal: "25 reps", checked: false },
     { id: "str_sls_box", label: "Single-Leg Squat to Box", goal: "10 reps/leg", checked: false },
-    // Then load progressions
     { id: "str_slp_075", label: "Single-Leg Leg Press", goal: "0.75 × BW", checked: false },
     { id: "str_slp_100", label: "Single-Leg Leg Press", goal: "1.0 × BW", checked: false },
     { id: "str_slp_125", label: "Single-Leg Leg Press", goal: "1.25 × BW", checked: false },
@@ -247,8 +249,8 @@ const goalOverrides = {
 const HIDE_FOR_YOUTH = ["str_sq_150","str_slp_150","iso_quad_40"];
 
 // -------- Storage --------
-const LS_KEY = "rtr_profiles_theme_logo_v4";
-const LS_ACTIVE = "rtr_active_id_theme_logo_v4";
+const LS_KEY = "rtr_profiles_theme_logo_v6";
+const LS_ACTIVE = "rtr_active_id_theme_logo_v6";
 const LS_COACH_EMAIL = "rtr_coach_email_v1";
 const THEME_KEY = "rtr_theme_pref_v1";
 
@@ -618,9 +620,9 @@ els.incompleteOnly.addEventListener("change", (e) => {
 
 // Persist coach email
 (function initCoachEmail() {
-  try { els.coachEmailInput.value = localStorage.getItem(LS_COACH_EMAIL) || ""; } catch {}
+  try { els.coachEmailInput.value = localStorage.getItem("rtr_coach_email_v1") || ""; } catch {}
   els.coachEmailInput.addEventListener("input", (e) => {
-    try { localStorage.setItem(LS_COACH_EMAIL, e.target.value || ""); } catch {}
+    try { localStorage.setItem("rtr_coach_email_v1", e.target.value || ""); } catch {}
   });
 })();
 
